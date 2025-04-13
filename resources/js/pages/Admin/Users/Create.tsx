@@ -16,7 +16,7 @@
         roles: Role[];
     }
 
-    export default function Create({ roles }: { roles: Role[] }) {
+    export default function UserCreate({ roles }: { roles: Role[] }) {
             const { data, setData, post, processing, errors } = useForm({
                     name: '',
                     email: '',

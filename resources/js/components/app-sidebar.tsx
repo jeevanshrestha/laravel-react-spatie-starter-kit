@@ -4,10 +4,10 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import {BookOpen, Folder, LayoutGrid, LucidePersonStanding} from 'lucide-react';
 import AppLogo from './app-logo';
 
-const mainNavItems: NavItem[] = [
+const mainNavItems: ({ icon: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>; href: string; title: string } | { children: ({ href: string; title: string } | { href: string; title: string })[]; icon: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>; title: string } | { children: ({ href: string; title: string } | { href: string; title: string })[]; icon: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>; title: string })[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -44,13 +44,13 @@ const mainNavItems: NavItem[] = [
 ];
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
+        title: 'User Management',
+        href: '/users',
+        icon: LucidePersonStanding,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
+        title: 'Roles ',
+        href: '/Roles',
         icon: BookOpen,
     },
 ];

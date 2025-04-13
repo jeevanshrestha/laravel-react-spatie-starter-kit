@@ -1,6 +1,7 @@
 import React from 'react';
 
-import AppLayout from '@/layouts/app-layout';import { Head, Link } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { Head, Link } from '@inertiajs/react';
 import type { User, Role } from '@/types/user';
 import type { PageProps } from '@inertiajs/react'; 
 

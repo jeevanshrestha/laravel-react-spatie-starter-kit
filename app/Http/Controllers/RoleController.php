@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-
+use Inertia\Inertia;
 class RoleController extends Controller
 {
     /**
@@ -14,9 +14,15 @@ class RoleController extends Controller
     public function index()
     {
         //
-        return Intertia::render('Admin/Roles/Index',[
-            'roles'=> Role::with('permissions')->get(),
-            'permissions' => Permission::all()
+        return Inertia::render('Admin/Roles/Index', [
+            'roles' => Role::withCount('users')
+                ->with('permissions')
+                ->paginate(10),
+            'permissions' => [
+                'create' => auth()->user()->can('create', Role::class),
+                'edit' => auth()->user()->can('update', Role::class),
+                'delete' => auth()->user()->can('delete', Role::class),
+            ]
         ]);
     }
 
@@ -26,8 +32,8 @@ class RoleController extends Controller
     public function create()
     {
         //
-        return Intertia::reinder('Admin/Roles/Create',[
-            'permissions'=> Permissions::all()
+        return Inertia::render('Admin/Roles/Create',[
+            'permissions'=> Permission::all()
         ]);
     }
 
@@ -58,7 +64,7 @@ class RoleController extends Controller
         $role->load(['permissions', 'users' => function($query) {
             $query->select('users.id', 'name', 'email');
         }]);
-    
+
         return Inertia::render('Admin/Roles/Show', [
             'role' => $role,
             'permissions' => $role->permissions,
@@ -70,16 +76,16 @@ class RoleController extends Controller
             ]
         ]);
     }
-    
+
     /**
      * Show the form for editing the specified resource.
      */
     public function edit(Role $role)
     {
         //
-        return Inertia::render('Admin/Role/Edit',[
+        return Inertia::render('Admin/Roles/Edit',[
             'role' => $role->load('permissions'),
-            'permissions'=> Permissions::all()
+            'permissions'=> Permission::all()
         ]);
 
     }
@@ -112,7 +118,7 @@ class RoleController extends Controller
                 if ($role->name === 'admin') {
                     return redirect()->back()->with('error', 'Cannot delete admin role');
                 }
-        
+
                 $role->delete();
                 return redirect()->route('roles.index')->with('success', 'Role deleted successfully');
     }
