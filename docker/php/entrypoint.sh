@@ -4,9 +4,7 @@ set -e
 
 cd /var/www
 
-# ✅ Correct commands
-npm install
-npm run build
+
 
 # Wait for MySQL to be ready
 echo "Waiting for MySQL to be ready..."
