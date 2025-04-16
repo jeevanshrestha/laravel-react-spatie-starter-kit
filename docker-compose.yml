@@ -5,12 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: "laravel-app"
-    restart: unless-stopped
+    restart: always
     working_dir: /var/www
     env_file:
-      - .env
-    ports:
-      - "9000:9000"
+      - .env 
     volumes:
       - .:/var/www/
       - ./docker/php/entrypoint.sh:/usr/local/bin/entrypoint.sh
@@ -27,15 +25,15 @@ services:
       - ./docker/nginx/ssl:/etc/nginx/ssl
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     ports:
-      - "8080:80"
-      - "8443:443"
+      - "80:80"
+      - "443:443"
     depends_on:
       - app
     networks:
       - app-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 5  
@@ -43,7 +41,7 @@ services:
   db:
     image: mysql:8.0
     container_name: "laravel-app-mysql"
-    restart: unless-stopped
+    restart: always
     volumes:
       - db_data:/var/lib/mysql
     environment:
@@ -63,6 +61,7 @@ services:
 
 volumes:
   db_data:
+
     driver: local
 networks:
   app-network:

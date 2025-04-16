@@ -75,9 +75,12 @@ CMD ["php-fpm"]
 FROM nginx:alpine  as nginx
 
 #copy nginx configuration
-
 COPY ./docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY ./docker/nginx/ssl/* /etc/nginx/ssl
+COPY ./docker/nginx/ssl/localhost.crt /etc/nginx/ssl/localhost.crt
+COPY ./docker/nginx/ssl/localhost.key /etc/nginx/ssl/localhost.key
+RUN chmod 755 /etc/nginx/ssl/localhost.crt
+RUN chmod 755 /etc/nginx/ssl/localhost.key
+
 #copy build assets from PHP stage
 COPY  --from=php /var/www/public /var/www/public
 
