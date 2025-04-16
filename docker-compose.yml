@@ -14,6 +14,8 @@ services:
       - ./docker/php/entrypoint.sh:/usr/local/bin/entrypoint.sh
     depends_on:
       - db 
+    ports:
+      - "9000:9000" 
     networks:
       - app-network
 

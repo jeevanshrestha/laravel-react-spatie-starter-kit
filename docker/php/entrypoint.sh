@@ -4,9 +4,9 @@ set -e
 
 cd /var/www
 
-npm run install 
-npm run buld
-
+# ✅ Correct commands
+npm install
+npm run build
 
 # Wait for MySQL to be ready
 echo "Waiting for MySQL to be ready..."
@@ -19,5 +19,5 @@ echo "MySQL is ready! Running migrations..."
 # Run migrations
 php artisan migrate --force
 
-# Continue with normal PHP-FPM startup
+# Start PHP-FPM
 exec "$@"
