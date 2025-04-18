@@ -15,7 +15,7 @@ class PermissionController extends Controller
     public function index()
     {
         $permissions = Permission::all();
-        return Inertia::render('Permissions/Index', ['permissions' => $permissions]);
+        return Inertia::render('Admin/Permissions/Index', ['permissions' => $permissions]);
     }
 
     /**
@@ -23,7 +23,7 @@ class PermissionController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Permissions/Create');
+        return Inertia::render('Admin/Permissions/Create');
     }
 
     /**
@@ -47,7 +47,7 @@ class PermissionController extends Controller
     public function show(string $id)
     {
         $permission = Permission::findOrFail($id);
-        return Inertia::render('Permissions/Show', ['permission' => $permission]);
+        return Inertia::render('Admin/Permissions/Show', ['permission' => $permission]);
     }
 
     /**
@@ -56,7 +56,7 @@ class PermissionController extends Controller
     public function edit(string $id)
     {
         $permission = Permission::findOrFail($id);
-        return Inertia::render('Permissions/Edit', ['permission' => $permission]);
+        return Inertia::render('Admin/Permissions/Edit', ['permission' => $permission]);
     }
 
     /**

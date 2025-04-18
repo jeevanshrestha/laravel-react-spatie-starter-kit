@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Application Service (Laravel + Nginx + PHP-FPM + Worker)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: multivendor_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html # Mount code for development; remove for pure production image
+      - ./storage/logs:/var/www/html/storage/logs # Persist logs if needed
+    networks:
+      - multivendor_network
+    depends_on:
+      - db 
+    environment:
+      # Ensure these match your Laravel .env settings
+      - DB_CONNECTION=mysql
+      - DB_HOST=db         # Service name of the database container
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-laravel} # Use host env var or default
+      - DB_USERNAME=${DB_USERNAME:-root}     # Use host env var or default
+      - DB_PASSWORD=${DB_PASSWORD:-root} # Use host env var or default
+      - REDIS_HOST=redis     # Service name of the redis container
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-null}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      # Add other necessary Laravel env vars (APP_KEY, APP_URL, etc.)
+      - APP_NAME="${APP_NAME:-Laravel}"
+      - APP_ENV="${APP_ENV:-production}"
+      - APP_KEY="${APP_KEY}" # Make sure to set this in your host .env or here
+      - APP_DEBUG="${APP_DEBUG:-false}"
+      - APP_URL="${APP_URL:-http://localhost}"
+      - LOG_CHANNEL=stderr # Good practice for containers
+
+  # Nginx 
+  # Note: Port mapping is done on the 'app' service
+  web:
+    image: nginx:alpine # This is just a placeholder if needed, but nginx runs in 'app'
+    container_name: multivendor_web_proxy # Optional proxy if needed separately
+    ports:
+      - "${APP_PORT:-8080}:80" # Map host port 80 (or from .env) to app's port 80
+    depends_on:
+      - app
+    networks:
+      - multivendor_network
+    # Add proxy configuration if you run Nginx separately from the app container
+
+  # MySQL Database Service
+  db:
+    image: mysql:8.0 # Or your preferred version
+    container_name: multivendor_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root} # Secure root password
+    volumes:
+      - multivendor_db_data:/var/lib/mysql # Persist data using a named volume
+    ports:
+      - "${DB_FORWARD_PORT:-3306}:3306" # Forward port to host if needed for external tools
+    networks:
+      - multivendor_network
+
+ 
+# Docker Networks
+networks:
+  multivendor_network:
+    driver: bridge
+
+# Docker Volumes
+volumes:
+  multivendor_db_data:
+    driver: local 
