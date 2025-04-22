@@ -1,7 +1,6 @@
 # Stage 1: PHP Base with Extensions
 FROM php:8.3-fpm-alpine as php_base
 
-
 # Install PHP and system dependencies
 RUN apk add --no-cache \
     git curl unzip zip \
@@ -32,16 +31,6 @@ COPY . .
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Run composer scripts now that all code is present
-RUN composer run-script post-install-cmd --no-interaction --no-dev
-
-# Generate Laravel specific optimizations
-RUN php artisan optimize:clear \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
-    && php artisan event:cache
-
 # Stage 2: Node Frontend Build
 FROM node:20-alpine as node_builder
 
@@ -56,28 +45,55 @@ RUN npm install
 # Copy frontend source code and build configuration
 COPY resources/js ./resources/js
 COPY resources/css ./resources/css
-COPY vite.config.ts ./
-
+COPY vite.config.ts ./ 
+COPY ./docker/nginx/ssl ./docker/nginx/ssl
 # Build frontend assets for production
 RUN npm run build
 
 # Stage 3: Final Image with Nginx + Supervisor
 FROM php_base as final
 
-# Remove default Nginx config
-RUN rm /etc/nginx/http.d/default.conf
+# Install Nginx 
+RUN apk add --no-cache nginx  
+
+# Ensure the Nginx configuration directory exists
+RUN mkdir -p /etc/nginx/conf.d/
+
+
+# Remove the default Nginx configuration file if it exists
+RUN rm -f /etc/nginx/conf.d/default.conf
+
 
 # Copy custom configurations
-COPY .docker/nginx/default.conf /etc/nginx/http.d/default.conf
-COPY .docker/php/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf 
+COPY ./docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY ./docker/nginx/ssl/localhost.crt /etc/nginx/ssl/localhost.crt
+COPY ./docker/nginx/ssl/localhost.key /etc/nginx/ssl/localhost.key
+
+COPY ./docker/php/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 
 # Copy built frontend assets from the node_builder stage
 COPY --from=node_builder /app/public/build /var/www/html/public/build
 
- 
-# Expose port 80
-EXPOSE 80
- 
-# Healthcheck (optional but recommended)
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl --fail http://localhost/ || exit 1
+# Expose port 9000
+EXPOSE   9000
+
+RUN sed -i 's/^listen = .*/listen = 0.0.0.0:9000/' /usr/local/etc/php-fpm.d/zz-docker.conf
+
+# Copy the entrypoint script
+COPY ./docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Make the script executable
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+
+# Change current user to www
+USER www-data
+
+
+# Set the custom entrypoint
+ENTRYPOINT ["entrypoint.sh"]
+
+# Default command
+CMD ["php-fpm"]
+
+  

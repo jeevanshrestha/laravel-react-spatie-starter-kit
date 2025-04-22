@@ -13,10 +13,7 @@ storage/framework/cache
 storage/framework/sessions
 storage/framework/views
 
-# Ignore environment files
  
-.env.*
-
 # Ignore build artifacts
 public/build
 
