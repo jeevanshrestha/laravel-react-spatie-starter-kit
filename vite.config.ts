@@ -4,6 +4,9 @@ import laravel from 'laravel-vite-plugin';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import fs from 'node:fs';
+import dotenv from 'dotenv';
+dotenv.config();
+
 export default defineConfig({
     plugins: [
         laravel({

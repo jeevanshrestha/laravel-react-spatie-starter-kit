@@ -171,7 +171,11 @@ $user->assignRole('admin');
 
 ---
 
- 
+## 502 Error
+Wait until php-fpm process starts in app container.
+`NOTICE: fpm is running, pid 1`
+`NOTICE: ready to handle connections`
+``
 ---
 
 ## 📄 License
