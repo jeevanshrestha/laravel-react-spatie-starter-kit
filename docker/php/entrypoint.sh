@@ -1,21 +1,23 @@
 #!/bin/sh
 
-set -e
+# Generate application key
+php artisan key:generate
 
-cd /var/www
+# Storage link 
+php artisan storage:link
 
+# Run database migrations
+# echo "Running database migrations..."
+ php artisan migrate --force
 
+# echo "Database seeding"
+ php artisan db:seed --force
 
-# Wait for MySQL to be ready
-echo "Waiting for MySQL to be ready..."
-while ! mysqladmin ping -h"mysql" -P"3306" --silent; do
-    sleep 1
-done
+# Clear application cache, route cache, view cache, and compiled files
+echo "Clearing application cache, route cache, view cache, and compiled files..."
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
 
-echo "MySQL is ready! Running migrations..."
-
-# Run migrations
-php artisan migrate --force
-
-# Start PHP-FPM
-exec "$@"
+# Run the default PHP-FPM entrypoint
+exec docker-php-entrypoint "$@"

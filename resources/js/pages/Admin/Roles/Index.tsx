@@ -3,13 +3,12 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { PaginatedResults, RoleWithPermissions } from '@/types/user';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-// Removed unused Badge import
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'; 
 import { PencilIcon, TrashIcon } from 'lucide-react';
 
 interface RoleIndexProps {
     roles: PaginatedResults<RoleWithPermissions>;
-    permissions: {
+    permissions: { 
         create: boolean;
         edit: boolean;
         delete: boolean;

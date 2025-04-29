@@ -1,94 +1,99 @@
-#use php:8.3-fpm as base
-# syntax=docker/dockerfile:1
-FROM php:8.3-fpm as php
-# Install dependencies
-# First update package lists
-RUN apt-get update -y && apt-get upgrade -y
+# Stage 1: PHP Base with Extensions
+FROM php:8.3-fpm-alpine as php_base
 
-# Install system dependencies in separate RUN commands for better debugging
- 
+# Install PHP and system dependencies
+RUN apk add --no-cache \
+    git curl unzip zip \
+    libzip-dev libpng-dev libjpeg-turbo-dev freetype-dev \
+    oniguruma-dev libxml2-dev icu-dev \
+    curl-dev openssl-dev pkgconfig zlib-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo pdo_mysql mbstring xml ctype fileinfo bcmath intl curl zip gd
 
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    unzip \
-    zip \
-    nodejs \
-    npm \
-    libzip-dev \
-    libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    libicu-dev \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    libmagic-dev \
-    libxpm-dev \
-    libwebp-dev \
-    libpq-dev \
-    libmcrypt-dev \
-    pkg-config \
-    zlib1g-dev \
- && apt-get clean && rm -rf /var/lib/apt/lists/*
-
- RUN docker-php-ext-install pdo pdo_mysql
- RUN docker-php-ext-install xml ctype fileinfo
- RUN docker-php-ext-install bcmath intl curl zip
-
-# Install GD with freetype and jpeg supportR
-RUN  docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-xpm \
-&& docker-php-ext-install -j$(nproc) gd \
-&& apt-get purge -y --auto-remove libfreetype6-dev libjpeg-dev libpng-dev libwebp-dev libxpm-dev
-
-
- 
-# Install Composer from official image
+# Install Composer globally
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
- 
-WORKDIR /var/www
 
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy basic composer files first for caching
+COPY composer.json composer.lock ./
+
+# Install composer dependencies (production)
+RUN composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist --optimize-autoloader \
+    && composer clear-cache
+
+# Copy the rest of the application code
 COPY . .
 
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+# Set permissions (ensure www-data owns storage/logs for queue worker)
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-RUN composer update
+# Stage 2: Node Frontend Build
+FROM node:20-alpine as node_builder
 
-# Install npm dependencies and build assets
-RUN npm install && npm run build
+WORKDIR /app
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm install
+
+# Copy frontend source code and build configuration
+COPY resources/js ./resources/js
+COPY resources/css ./resources/css
+COPY vite.config.ts ./ 
+COPY ./docker/nginx/ssl ./docker/nginx/ssl
+# Build frontend assets for production
+RUN npm run build
+
+# Stage 3: Final Image with Nginx + Supervisor
+FROM php_base as final
+
+# Install Nginx 
+RUN apk add --no-cache nginx  
+
+# Ensure the Nginx configuration directory exists
+RUN mkdir -p /etc/nginx/conf.d/
 
 
-# Copy entrypoint script
-COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# Remove the default Nginx configuration file if it exists
+RUN rm -f /etc/nginx/conf.d/default.conf
 
-EXPOSE 9000
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["php-fpm"]
 
-#NGINX stage
-FROM nginx:alpine  as nginx
-
-#copy nginx configuration
+# Copy custom configurations
 COPY ./docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY ./docker/nginx/ssl/localhost.crt /etc/nginx/ssl/localhost.crt
 COPY ./docker/nginx/ssl/localhost.key /etc/nginx/ssl/localhost.key
-RUN chmod 755 /etc/nginx/ssl/localhost.crt
-RUN chmod 755 /etc/nginx/ssl/localhost.key
 
-#copy build assets from PHP stage
-COPY  --from=php /var/www/public /var/www/public
+COPY ./docker/php/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 
-#Expose port 80
+# Copy built frontend assets from the node_builder stage
+COPY --from=node_builder /app/public/build /var/www/html/public/build
 
-EXPOSE 80
-EXPOSE 443
+# Expose port 9000
+EXPOSE   9000
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+RUN sed -i 's/^listen = .*/listen = 0.0.0.0:9000/' /usr/local/etc/php-fpm.d/zz-docker.conf
 
+# Copy the entrypoint script
+COPY ./docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Make the script executable
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+
+# Change current user to www
+USER www-data
+
+
+# Set the custom entrypoint
+ENTRYPOINT ["entrypoint.sh"]
+
+# Default command
+CMD ["php-fpm"]
+
+  

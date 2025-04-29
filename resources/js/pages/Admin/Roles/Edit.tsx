@@ -41,6 +41,7 @@ export default function RoleEdit({ role, permissions }: EditProps) {
                         <input
                             id="name"
                             type="text"
+                            required
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             className="w-full px-4 py-2 border rounded-md"

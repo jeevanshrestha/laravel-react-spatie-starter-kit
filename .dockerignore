@@ -1,0 +1,35 @@
+# .dockerignore
+
+# Ignore node_modules
+node_modules
+
+# Ignore vendor (if using Composer locally)
+vendor
+
+# Ignore logs
+public/storage
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+
+ 
+# Ignore build artifacts
+public/build
+
+# Ignore IDE/editor config files
+*.idea
+*.vscode
+
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Docker-related files (if not needed in the build)
+.dockerignore
+docker-compose.yml
+
+# Ignore other unnecessary files
+*.log
+*.tmp
+*.bak
